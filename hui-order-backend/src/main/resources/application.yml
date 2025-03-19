@@ -1,0 +1,52 @@
+# Server Configuration
+server:
+  port: 9100
+  servlet:
+    context-path: /
+
+# PostgreSQL Database Configuration
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/database_name
+    username: postgres
+    password: 9478
+    driver-class-name: org.postgresql.Driver
+
+  # CORS Configuration
+  web:
+    cors:
+      # 在開發階段可以使用 * 允許所有來源，生產環境中指定具體的域名
+      allowed-origins: "*"
+      allowed-origin-patterns: "*"
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD
+      allowed-headers: Authorization,Content-Type,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers
+      exposed-headers: Authorization,Content-Type,Access-Control-Allow-Origin,Access-Control-Allow-Credentials
+      allow-credentials: true
+      max-age: 3600
+
+# MyBatis-Plus Configuration
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.hui.mapper
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+  global-config:
+    db-config:
+      id-type: auto
+      table-underline: true
+
+# Security Configuration
+jwt:
+  secret: huiOrderSecretKey2025ForJwtTokenAuthenticationSecurity
+  expiration: 86400000
+
+# Logging Configuration
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG  # 增加日誌級別以查看更詳細的請求信息
+        security: DEBUG
+    com:
+      hui: DEBUG

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车清理工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button.delete {
+            background-color: #f44336;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .cart-items {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>购物车清理工具</h1>
+        
+        <div>
+            <button id="removeSpecific">删除特定商品</button>
+            <button id="showCart">显示购物车</button>
+            <button id="clearCart" class="delete">清空购物车</button>
+        </div>
+        
+        <div id="cartItems" class="cart-items" style="display: none;">
+            <h2>当前购物车商品</h2>
+            <div id="itemsList"></div>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const removeSpecificBtn = document.getElementById('removeSpecific');
+            const showCartBtn = document.getElementById('showCart');
+            const clearCartBtn = document.getElementById('clearCart');
+            const resultDiv = document.getElementById('result');
+            const cartItemsDiv = document.getElementById('cartItems');
+            const itemsListDiv = document.getElementById('itemsList');
+            
+            // 显示购物车内容
+            function displayCart() {
+                try {
+                    const cartData = localStorage.getItem('cart');
+                    
+                    if (!cartData) {
+                        itemsListDiv.innerHTML = '<p>购物车为空</p>';
+                        cartItemsDiv.style.display = 'block';
+                        return;
+                    }
+                    
+                    const cartItems = JSON.parse(cartData);
+                    
+                    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+                        itemsListDiv.innerHTML = '<p>购物车为空</p>';
+                        cartItemsDiv.style.display = 'block';
+                        return;
+                    }
+                    
+                    let html = '';
+                    cartItems.forEach(item => {
+                        html += `
+                            <div class="item">
+                                <span>${item.name}</span>
+                                <span>数量: ${item.quantity}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    itemsListDiv.innerHTML = html;
+                    cartItemsDiv.style.display = 'block';
+                } catch (error) {
+                    showError('显示购物车数据时出错: ' + error.message);
+                }
+            }
+            
+            // 删除特定商品
+            function removeSpecificItems() {
+                try {
+                    const itemsToRemove = ['Smartphone X', 'Wireless Headphones'];
+                    const cartData = localStorage.getItem('cart');
+                    
+                    if (!cartData) {
+                        showSuccess('购物车为空，无需删除');
+                        return;
+                    }
+                    
+                    const cartItems = JSON.parse(cartData);
+                    
+                    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+                        showSuccess('购物车为空，无需删除');
+                        return;
+                    }
+                    
+                    const originalCount = cartItems.length;
+                    const filteredItems = cartItems.filter(item => !itemsToRemove.includes(item.name));
+                    const removedCount = originalCount - filteredItems.length;
+                    
+                    localStorage.setItem('cart', JSON.stringify(filteredItems));
+                    
+                    showSuccess(`已成功删除 ${removedCount} 个商品: ${itemsToRemove.join(', ')}`);
+                    displayCart();
+                } catch (error) {
+                    showError('删除商品时出错: ' + error.message);
+                }
+            }
+            
+            // 清空购物车
+            function clearCart() {
+                try {
+                    localStorage.removeItem('cart');
+                    showSuccess('购物车已清空');
+                    displayCart();
+                } catch (error) {
+                    showError('清空购物车时出错: ' + error.message);
+                }
+            }
+            
+            // 显示成功消息
+            function showSuccess(message) {
+                resultDiv.textContent = message;
+                resultDiv.className = 'result success';
+                resultDiv.style.display = 'block';
+            }
+            
+            // 显示错误消息
+            function showError(message) {
+                resultDiv.textContent = message;
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+            }
+            
+            // 绑定事件
+            removeSpecificBtn.addEventListener('click', removeSpecificItems);
+            showCartBtn.addEventListener('click', displayCart);
+            clearCartBtn.addEventListener('click', clearCart);
+            
+            // 初始显示购物车
+            displayCart();
+        });
+    </script>
+</body>
+</html>

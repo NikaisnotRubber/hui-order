@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購物車修復工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button.danger {
+            background-color: #f44336;
+        }
+        button.warning {
+            background-color: #ff9800;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #e8f4f8;
+            white-space: pre-wrap;
+        }
+        .cart-items {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item:last-child {
+            border-bottom: none;
+        }
+        .item-info {
+            flex: 1;
+        }
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .tab-container {
+            margin-top: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-button {
+            padding: 10px 15px;
+            background-color: #f1f1f1;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+        .hidden {
+            display: none;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .flex {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>購物車修復工具</h1>
+        
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="view">查看購物車</button>
+                <button class="tab-button" data-tab="actions">修復操作</button>
+                <button class="tab-button" data-tab="delete">刪除商品</button>
+                <button class="tab-button" data-tab="logs">操作日誌</button>
+            </div>
+            
+            <!-- 查看购物车选项卡 -->
+            <div class="tab-content" id="view-tab">
+                <h2>目前購物車內容</h2>
+                <button id="refreshCart">重新整理購物車</button>
+                
+                <div id="cartItems" class="cart-items">
+                    <div id="itemsList"></div>
+                </div>
+                
+                <div id="cartSummary" class="result">
+                    <p>總商品數: <span id="totalItems">0</span></p>
+                    <p>總金額: <span id="totalPrice">$0.00</span></p>
+                </div>
+            </div>
+            
+            <!-- 修复操作选项卡 -->
+            <div class="tab-content hidden" id="actions-tab">
+                <h2>修復操作</h2>
+                <p>選擇要執行的操作：</p>
+                
+                <div class="input-group">
+                    <button id="removeSpecificBtn" class="warning">刪除 Smartphone X 和 Wireless Headphones</button>
+                    <p>移除指定的兩個商品 (Smartphone X 和 Wireless Headphones)</p>
+                </div>
+                
+                <div class="input-group">
+                    <button id="emptyCartBtn" class="danger">清空購物車</button>
+                    <p>完全清空購物車中的所有商品</p>
+                </div>
+                
+                <div class="input-group">
+                    <button id="fixCartStructureBtn">修復購物車結構</button>
+                    <p>修復可能損壞的購物車資料結構</p>
+                </div>
+            </div>
+            
+            <!-- 删除商品选项卡 -->
+            <div class="tab-content hidden" id="delete-tab">
+                <h2>刪除特定商品</h2>
+                
+                <div class="input-group">
+                    <label for="itemIdInput">商品ID：</label>
+                    <div class="flex">
+                        <input type="text" id="itemIdInput" placeholder="輸入商品ID，例如 '4'">
+                        <button id="deleteByIdBtn" class="warning">刪除</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="itemNameInput">商品名稱：</label>
+                    <div class="flex">
+                        <input type="text" id="itemNameInput" placeholder="輸入商品名稱，例如 'Smartphone X'">
+                        <button id="deleteByNameBtn" class="warning">刪除</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 日志选项卡 -->
+            <div class="tab-content hidden" id="logs-tab">
+                <h2>操作日誌</h2>
+                <button id="clearLogsBtn">清空日誌</button>
+                <div id="logOutput" class="result">準備就緒，等待操作...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM元素
+            const itemsList = document.getElementById('itemsList');
+            const totalItems = document.getElementById('totalItems');
+            const totalPrice = document.getElementById('totalPrice');
+            const logOutput = document.getElementById('logOutput');
+            const refreshCartBtn = document.getElementById('refreshCart');
+            const removeSpecificBtn = document.getElementById('removeSpecificBtn');
+            const emptyCartBtn = document.getElementById('emptyCartBtn');
+            const fixCartStructureBtn = document.getElementById('fixCartStructureBtn');
+            const deleteByIdBtn = document.getElementById('deleteByIdBtn');
+            const deleteByNameBtn = document.getElementById('deleteByNameBtn');
+            const clearLogsBtn = document.getElementById('clearLogsBtn');
+            const itemIdInput = document.getElementById('itemIdInput');
+            const itemNameInput = document.getElementById('itemNameInput');
+            
+            // 选项卡切换
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    // 更新按钮状态
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // 更新内容显示
+                    tabContents.forEach(content => {
+                        if (content.id === `${tabId}-tab`) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+            
+            // 日志函数
+            function log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                logOutput.innerHTML = `[${timestamp}] ${message}\n` + logOutput.innerHTML;
+                console.log(`[${timestamp}] ${message}`);
+            }
+            
+            // 显示购物车内容
+            function displayCart() {
+                try {
+                    const cartData = localStorage.getItem('cart');
+                    
+                    if (!cartData) {
+                        itemsList.innerHTML = '<p>購物車為空</p>';
+                        totalItems.textContent = '0';
+                        totalPrice.textContent = '$0.00';
+                        log('購物車為空');
+                        return;
+                    }
+                    
+                    const cartItems = JSON.parse(cartData);
+                    
+                    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+                        itemsList.innerHTML = '<p>購物車為空</p>';
+                        totalItems.textContent = '0';
+                        totalPrice.textContent = '$0.00';
+                        log('購物車為空陣列');
+                        return;
+                    }
+                    
+                    let html = '';
+                    let itemCount = 0;
+                    let priceTotal = 0;
+                    
+                    cartItems.forEach(item => {
+                        itemCount += item.quantity || 0;
+                        priceTotal += (item.price || 0) * (item.quantity || 1);
+                        
+                        html += `
+                            <div class="item">
+                                <div class="item-info">
+                                    <strong>${item.name}</strong>
+                                    <div>ID: ${item.id}</div>
+                                    <div>價格: $${(item.price || 0).toFixed(2)}</div>
+                                    <div>數量: ${item.quantity || 1}</div>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="danger" onclick="removeItemById('${item.id}')">刪除</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    itemsList.innerHTML = html;
+                    totalItems.textContent = itemCount.toString();
+                    totalPrice.textContent = `$${priceTotal.toFixed(2)}`;
+                    log(`已載入購物車資料，共 ${cartItems.length} 個商品項`);
+                } catch (error) {
+                    log(`顯示購物車出錯: ${error.message}`);
+                    itemsList.innerHTML = '<p>載入購物車時出錯</p>';
+                }
+            }
+            
+            // 删除指定商品
+            function removeSpecificItems() {
+                try {
+                    const itemsToRemove = ['Smartphone X', 'Wireless Headphones'];
+                    const cartData = localStorage.getItem('cart');
+                    
+                    if (!cartData) {
+                        log('購物車為空，無需刪除特定商品');
+                        return;
+                    }
+                    
+                    const cartItems = JSON.parse(cartData);
+                    
+                    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+                        log('購物車為空陣列，無需刪除特定商品');
+                        return;
+                    }
+                    
+                    const originalCount = cartItems.length;
+                    const filteredItems = cartItems.filter(item => !itemsToRemove.includes(item.name));
+                    const removedCount = originalCount - filteredItems.length;
+                    
+                    localStorage.setItem('cart', JSON.stringify(filteredItems));
+                    
+                    log(`已刪除 ${removedCount} 個特定商品 (${itemsToRemove.join(', ')})`);
+                    displayCart();
+                } catch (error) {
+                    log(`刪除特定商品時出錯: ${error.message}`);
+                }
+            }
+            
+            // 通过ID删除商品
+            function removeItemById(id) {
+                try {
+                    const cartData = localStorage.getItem('cart');
+                    if (!cartData) {
+                        log(`購物車為空，無法刪除ID為 ${id} 的商品`);
+                        return;
+                    }
+                    
+                    const cartItems = JSON.parse(cartData);
+                    
+                    if (!Array.isArray(cartItems)) {
+                        log('購物車資料格式錯誤');
+                        return;
+                    }
+                    
+                    const index = cartItems.findIndex(item => item.id === id);
+                    
+                    if (index === -1) {
+                        log(`未找到ID為 ${id} 的商品`);
+                        return;
+                    }
+                    
+                    const removedItem = cartItems[index];
+                    cartItems.splice(index, 1);
+                    
+                    localStorage.setItem('cart', JSON.stringify(cartItems));
+                    
+                    log(`已刪除商品: ${removedItem.name} (ID: ${id})`);
+                    displayCart();
+                } catch (error) {
+                    log(`透過ID刪除商品時出錯: ${error.message}`);
+                }
+            }
+            
+            // 通过名称删除商品
+            function removeItemByName(name) {
+                try {
+                    const cartData = localStorage.getItem('cart');
+                    if (!cartData) {
+                        log(`購物車為空，無法刪除名稱為 ${name} 的商品`);
+                        return;
+                    }
+                    
+                    const cartItems = JSON.parse(cartData);
+                    
+                    if (!Array.isArray(cartItems)) {
+                        log('購物車資料格式錯誤');
+                        return;
+                    }
+                    
+                    const originalCount = cartItems.length;
+                    const filteredItems = cartItems.filter(item => item.name !== name);
+                    const removedCount = originalCount - filteredItems.length;
+                    
+                    if (removedCount === 0) {
+                        log(`未找到名稱為 ${name} 的商品`);
+                        return;
+                    }
+                    
+                    localStorage.setItem('cart', JSON.stringify(filteredItems));
+                    
+                    log(`已刪除 ${removedCount} 個名稱為 ${name} 的商品`);
+                    displayCart();
+                } catch (error) {
+                    log(`透過名稱刪除商品時出錯: ${error.message}`);
+                }
+            }
+            
+            // 清空购物车
+            function emptyCart() {
+                try {
+                    localStorage.removeItem('cart');
+                    localStorage.setItem('cart', JSON.stringify([]));
+                    log('購物車已清空');
+                    displayCart();
+                } catch (error) {
+                    log(`清空購物車時出錯: ${error.message}`);
+                }
+            }
+            
+            // 修复购物车结构
+            function fixCartStructure() {
+                try {
+                    const cartData = localStorage.getItem('cart');
+                    
+                    if (!cartData) {
+                        localStorage.setItem('cart', JSON.stringify([]));
+                        log('購物車為空，已初始化為空陣列');
+                        return;
+                    }
+                    
+                    try {
+                        const cartItems = JSON.parse(cartData);
+                        
+                        if (!Array.isArray(cartItems)) {
+                            localStorage.setItem('cart', JSON.stringify([]));
+                            log('購物車資料格式錯誤，已重置為空陣列');
+                            displayCart();
+                            return;
+                        }
+                        
+                        // 修复商品数据结构
+                        const fixedItems = cartItems.map(item => {
+                            return {
+                                id: item.id || '',
+                                name: item.name || 'Unknown Item',
+                                description: item.description || '',
+                                price: typeof item.price === 'number' ? item.price : 0,
+                                imageUrl: item.imageUrl || '',
+                                category: item.category || '',
+                                stock: typeof item.stock === 'number' ? item.stock : 0,
+                                quantity: typeof item.quantity === 'number' ? item.quantity : 1
+                            };
+                        }).filter(item => item.id && item.name);
+                        
+                        localStorage.setItem('cart', JSON.stringify(fixedItems));
+                        log(`購物車結構已修復，有效商品: ${fixedItems.length}`);
+                        displayCart();
+                    } catch (e) {
+                        localStorage.setItem('cart', JSON.stringify([]));
+                        log('購物車資料無法解析，已重置為空');
+                        displayCart();
+                    }
+                } catch (error) {
+                    log(`修復購物車結構時出錯: ${error.message}`);
+                }
+            }
+            
+            // 绑定事件
+            refreshCartBtn.addEventListener('click', displayCart);
+            removeSpecificBtn.addEventListener('click', removeSpecificItems);
+            emptyCartBtn.addEventListener('click', emptyCart);
+            fixCartStructureBtn.addEventListener('click', fixCartStructure);
+            clearLogsBtn.addEventListener('click', () => {
+                logOutput.innerHTML = '日誌已清空';
+            });
+            
+            deleteByIdBtn.addEventListener('click', () => {
+                const id = itemIdInput.value.trim();
+                if (id) {
+                    removeItemById(id);
+                    itemIdInput.value = '';
+                } else {
+                    log('請輸入有效的商品ID');
+                }
+            });
+            
+            deleteByNameBtn.addEventListener('click', () => {
+                const name = itemNameInput.value.trim();
+                if (name) {
+                    removeItemByName(name);
+                    itemNameInput.value = '';
+                } else {
+                    log('請輸入有效的商品名稱');
+                }
+            });
+            
+            // 暴露函数到全局作用域以便HTML使用
+            window.removeItemById = removeItemById;
+            
+            // 初始化
+            displayCart();
+            log('購物車修復工具已初始化');
+        });
+    </script>
+</body>
+</html>
