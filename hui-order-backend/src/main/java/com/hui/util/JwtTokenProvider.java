@@ -6,6 +6,7 @@ import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Component;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
@@ -16,7 +17,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
@@ -51,12 +54,10 @@ public class JwtTokenProvider {
      */
     public String createToken(Authentication authentication) {
         // 從 Authentication 中獲取用戶信息
-        String username = authentication.getName();
-        
+        String username = authentication.getName();    
         // 創建自定義的數據map
         Map<String, Object> userData = new HashMap<>();
         userData.put("username", username);
-        
         // 使用現有方法創建token
         return createToken(userData);
     }
@@ -67,7 +68,8 @@ public class JwtTokenProvider {
     public String createToken(String email) {
         Map<String, Object> userData = new HashMap<>();
         userData.put("username", email);
-        
+
+        log.info("Creating token for user: {}", email);
         return createToken(userData);
     }
 

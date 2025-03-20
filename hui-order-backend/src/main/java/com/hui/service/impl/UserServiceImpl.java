@@ -63,4 +63,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         userMapper.updateById(user);
     }
+
+    @Override
+    public String getUserRoleById(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            return null;
+        }
+        return user.getRole();
+    }
 }

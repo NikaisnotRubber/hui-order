@@ -52,117 +52,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String requestPath = request.getRequestURI();
             logger.info("Processing request for path: {}", requestPath);
 
-            // 檢查是否是管理員路徑
-            boolean isAdminPath = requestPath.startsWith("/api/admin") || requestPath.startsWith("/admin");
+            // 非管理員路徑，嘗試進行一般認證
+            String token = extractJwtFromRequest(request);
 
-            // 只有管理員路徑才需要檢查權限
-            if (isAdminPath) {
-                logger.info("Admin path detected: {}", requestPath);
+            if (token != null) {
+                try {
+                    Claims claims = jwtTokenProvider.parseToken(token);
 
-                // 登入和註冊路徑不需要檢查權限
-                if (requestPath.endsWith("/login") || requestPath.endsWith("/register")) {
-                    logger.info("Auth path excluded from admin check: {}", requestPath);
-                    filterChain.doFilter(request, response);
-                    return;
-                }
+                    if (claims != null) {
+                        Map<String, Object> userData = JSON.parseObject(claims.getSubject(), Map.class);
+                        String username = (String) userData.get("username");
+                        String role = (String) userData.get("role");
 
-                // 從請求頭中獲取 JWT
-                String token = extractJwtFromRequest(request);
-
-                if (token == null) {
-                    logger.warn("No token provided for admin path: {}", requestPath);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Authentication required");
-                    return;
-                }
-
-                // 驗證令牌
-                Claims claims = jwtTokenProvider.parseToken(token);
-
-                if (claims == null) {
-                    logger.warn("Invalid token for admin path: {}", requestPath);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Invalid token");
-                    return;
-                }
-
-                // 從令牌中獲取用戶名
-                Map<String, Object> userData = JSON.parseObject(claims.getSubject(), Map.class);
-                String username = (String) userData.get("username");
-
-                if (username == null) {
-                    logger.warn("No username in token for admin path: {}", requestPath);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Invalid token data");
-                    return;
-                }
-
-                // 從數據庫獲取用戶信息
-                User user = userService.getUserByEmail(username);
-
-                if (user == null) {
-                    logger.warn("User not found for username: {} on admin path: {}", username, requestPath);
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("User not found");
-                    return;
-                }
-
-                String role = user.getRole();
-                logger.info("User found: {}, role: {}", username, role);
-
-                // 檢查用戶角色
-                if (!"ADMIN".equals(role)) {
-                    logger.warn("Access denied: User {} with role {} tried to access admin path {}", 
-                            username, role, requestPath);
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.getWriter().write("Access denied: Admin role required");
-                    return;
-                }
-
-                // 建立認證
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority(role));
-
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        username, null, authorities
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.info("Admin user authenticated successfully: {}", username);
-            } else {
-                // 非管理員路徑，嘗試進行一般認證
-                String token = extractJwtFromRequest(request);
-
-                if (token != null) {
-                    try {
-                        Claims claims = jwtTokenProvider.parseToken(token);
-
-                        if (claims != null) {
-                            Map<String, Object> userData = JSON.parseObject(claims.getSubject(), Map.class);
-                            String username = (String) userData.get("username");
-
-                            User user = userService.getUserByEmail(username);
-                            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-
-                            if (user != null && StringUtils.hasText(user.getRole())) {
-                                authorities.add(new SimpleGrantedAuthority(user.getRole()));
-                            } else {
-                                authorities.add(new SimpleGrantedAuthority("USER"));
-                            }
-
-                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                    username, null, authorities
-                            );
-
-                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        if (role == null) {
+                            role = "USER";
                         }
-                    } catch (Exception e) {
-                        logger.error("Error processing token for non-admin path: {}", e.getMessage());
-                        // 不是管理員路徑，不需要中斷，繼續處理
+
+                        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                        authorities.add(new SimpleGrantedAuthority(role));
+
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                username, null, authorities
+                        );
+
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
                     }
+                } catch (Exception e) {
+                    logger.error("Error processing token for non-admin path: {}", e.getMessage());
+                    // 不是管理員路徑，不需要中斷，繼續處理
                 }
             }
-
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
             // 處理過期令牌

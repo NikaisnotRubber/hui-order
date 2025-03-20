@@ -20,7 +20,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -49,11 +48,17 @@ public class AuthConfig {
                     throw new UsernameNotFoundException("User not found with email: " + username);
                 }
                 
+                // 獲取用戶實際角色
+                String role = user.getRole();
+                if (role == null || role.isEmpty()) {
+                    role = "USER"; // 默認角色
+                }
+                
                 // 創建 Spring Security 的 UserDetails 對象
                 return new org.springframework.security.core.userdetails.User(
                     user.getEmail(),
                     user.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                    Collections.singletonList(new SimpleGrantedAuthority(role))
                 );
             }
         };
@@ -67,29 +72,20 @@ public class AuthConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // 不需認證的端點 - 同時支持帶 /api 和不帶 /api 的路徑
-                        .requestMatchers(
-                                AntPathRequestMatcher.antMatcher("/api/auth/**"),  // 帶 /api 前綴的路徑
-                                AntPathRequestMatcher.antMatcher("/auth/**"),      // 不帶 /api 前綴的路徑
-                                AntPathRequestMatcher.antMatcher("/api/public/**"), 
-                                AntPathRequestMatcher.antMatcher("/public/**"),    // 不帶 /api 前綴的公共路徑
-                                AntPathRequestMatcher.antMatcher("/error"),
-                                AntPathRequestMatcher.antMatcher("/api/admin/register"),
-                                AntPathRequestMatcher.antMatcher("/admin/register")
-
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
-                // 添加JWT過濾器（如果使用JWT）
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
-                // 設置無狀態會話（對於REST API）
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**", "/auth/**", "/api/public/**", "/public/**","/api/admin/**", "/admin/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // 添加自定義過濾器，在UsernamePasswordAuthenticationFilter之前
+            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+        
         return http.build();
     }
+
+    
     
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

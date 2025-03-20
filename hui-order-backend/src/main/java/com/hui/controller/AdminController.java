@@ -11,6 +11,7 @@ import com.hui.util.JwtTokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -51,17 +52,29 @@ public class AdminController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Generate JWT token
-            String token = jwtTokenProvider.createToken(authentication);
-
             // Get user data
             User user = userService.getUserByEmail(loginRequest.getEmail());
+            String role = userService.getUserRoleById(user.getId());
             UserDTO userDTO = userService.getUserDTOById(user.getId());
+            
+            //驗證用戶是否為管理員權限
+            if (!role.equals(("ADMIN"))) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "只有管理員可以登錄此端點");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);            
+            }
+                
+            // 創建包含用戶角色的JWT token
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("username", user.getEmail());
+            userData.put("password", user.getPassword());
+            String token = jwtTokenProvider.createToken(userData);
 
             // Create response
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("user", userDTO);
+
             log.info("Login successful for email: {}", loginRequest.getEmail());
             return ResponseEntity.ok(response);
         } catch (Exception e) {

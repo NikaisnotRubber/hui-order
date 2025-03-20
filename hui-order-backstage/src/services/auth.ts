@@ -12,6 +12,7 @@ export interface User {
 export interface LoginRequest {
   email: string
   password: string
+  role: string
 }
 
 // 註冊請求參數
