@@ -36,7 +36,7 @@ jobs:
           --mount type=bind,source=${{ github.workspace }}/schema.sql,target=/docker-entrypoint-initdb.d/schema.sql,readonly
     steps:
       - name: checkout
-        uses: action/checkout@v2
+        uses: actions/checkout@v3
          # 等待 PostgreSQL 準備就緒
       - name: Wait for PostgreSQL to be ready
         run: |
