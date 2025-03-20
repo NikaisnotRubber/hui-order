@@ -32,7 +32,8 @@ jobs:
         run: |
             pwd
             echo "Deploying backend application..."
-            docker compose up -d
+            docker-compose -f ./docker-composer.yml  up
+
 
       - name: checkout
         uses: actions/checkout@v3
