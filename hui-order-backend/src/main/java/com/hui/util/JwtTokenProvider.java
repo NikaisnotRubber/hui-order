@@ -60,6 +60,16 @@ public class JwtTokenProvider {
         // 使用現有方法創建token
         return createToken(userData);
     }
+    
+    /**
+     * 為指定郵箱創建 JWT Token
+     */
+    public String createToken(String email) {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("username", email);
+        
+        return createToken(userData);
+    }
 
     public static void main(String[] args) {
         JwtTokenProvider jwtUtil = new JwtTokenProvider();
