@@ -12,7 +12,9 @@ on:
 jobs:
   deploy-and-test:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: ./hui-order
     services:
       postgres:
         image: postgres:16
@@ -31,6 +33,7 @@ jobs:
     steps:
       - name: Deploy backend application
         run: |
+            cd {}
             echo "Deploying backend application..."
             docker compose up -d
 
