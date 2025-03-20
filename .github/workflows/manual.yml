@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Deploy backend application
         run: |
-            
+            ls -a
             echo "Deploying backend application..."
             docker compose -f ../docker-composer.yml  up
 
@@ -41,7 +41,7 @@ jobs:
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..30}; do
-            pg_isready -h localhost -p 5432 -U postgres
+            pg_isready -h localhost -p 13306 -U postgres
             RESULT=$?
             if [ $RESULT -eq 0 ]; then
               echo "PostgreSQL is ready!"
@@ -57,7 +57,7 @@ jobs:
       - name: Wait for backend service to start
         run: |
           for i in {1..30}; do
-            if curl -s http://localhost:8080/health | grep -q "ok"; then
+            if curl -s http://localhost:9100/health | grep -q "ok"; then
               echo "Backend service is ready!"
               exit 0
             fi
