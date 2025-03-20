@@ -37,7 +37,7 @@ jobs:
         run: |
             tree
             echo "Deploying backend application..."
-            docker compose -d ${{ github.workspace }}/docker-composer.yml up
+            docker compose -df ${{ github.workspace }}/docker-composer.yml up
 
 
      
