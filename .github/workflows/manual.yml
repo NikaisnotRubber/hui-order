@@ -30,9 +30,9 @@ jobs:
     steps:
       - name: Deploy backend application
         run: |
-            ls -la
+            cd ${{ github.workspace }} && ls -la
             echo "Deploying backend application..."
-            docker compose -f ${{ github.workspace }}/docker-composer.yml  up
+            docker compose -f ${{ github.workspace }}/../docker-composer.yml  up
 
 
       - name: checkout
