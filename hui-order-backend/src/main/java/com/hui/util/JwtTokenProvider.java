@@ -42,6 +42,7 @@ public class JwtTokenProvider {
                 .setIssuedAt(new Date(currentTime))
                 .signWith(SignatureAlgorithm.HS256, encodeSecret(jwtSecret))
                 .setExpiration(new Date(expTime));
+                
         return builder.compact();
     }
     

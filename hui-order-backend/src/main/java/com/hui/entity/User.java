@@ -27,4 +27,7 @@ public class User {
     
     @TableField("password")
     private String password;
+    
+    @TableField("admin")
+    private String role;
 }

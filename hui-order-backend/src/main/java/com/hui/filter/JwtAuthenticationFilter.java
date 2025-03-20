@@ -1,10 +1,14 @@
 package com.hui.filter;
 
+import com.hui.service.UserService;
+import com.hui.entity.User;
 import com.hui.util.JwtTokenProvider;
+import com.alibaba.fastjson.JSON;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,13 +21,18 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    
+
+    @Autowired
+    private UserService userService;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
@@ -32,7 +41,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
         // 從請求頭中獲取 JWT
         String token = extractJwtFromRequest(request);
 
@@ -48,18 +56,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 如果令牌有效，設置 Spring Security 的認證信息
             if (claims != null) {
-                Integer userId = jwtTokenProvider.getUserIdFromToken(token);
+                // 從令牌中獲取用戶名
+                Map<String, Object> userData = JSON.parseObject(claims.getSubject(), Map.class);
+                String username = (String) userData.get("username");
 
-                // 創建認證信息（這裡僅使用用戶 ID 和一個基本角色）
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-                );
+                // 從數據庫獲取用戶信息
+                User user = userService.getUserByEmail(username);
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+                // 添加用戶角色到授權列表
                 
+                authorities.add(new SimpleGrantedAuthority(user.getRole()));
+                String role = user.getRole();
+
+                // 檢查是否是管理員路徑
+                String requestPath = request.getRequestURI();
+                if ((requestPath.startsWith("/api/admin") || requestPath.startsWith("/admin"))
+                        && !role.equals("ADMIN")) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("Access denied: Admin role required");
+                    return;
+                }
+
+                // 創建認證信息
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        username, null, authorities
+                );
+
                 // 將認證信息添加到當前線程的 SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
             filterChain.doFilter(request, response);
+
         } catch (ExpiredJwtException e) {
             // 處理過期令牌
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -94,6 +123,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(customToken)) {
             return customToken;
         }
+
         return null;
     }
 }

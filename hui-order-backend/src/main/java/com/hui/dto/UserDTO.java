@@ -14,6 +14,7 @@ public class UserDTO {
     private Long id;
     private String name;
     private String email;
+    private String role;
     
     // Password is deliberately excluded for security reasons
 }

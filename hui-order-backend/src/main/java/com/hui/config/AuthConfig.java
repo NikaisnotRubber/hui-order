@@ -70,13 +70,16 @@ public class AuthConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // 擴展允許不需認證的端點 - 同時支持帶 /api 和不帶 /api 的路徑
+                        // 不需認證的端點 - 同時支持帶 /api 和不帶 /api 的路徑
                         .requestMatchers(
                                 AntPathRequestMatcher.antMatcher("/api/auth/**"),  // 帶 /api 前綴的路徑
                                 AntPathRequestMatcher.antMatcher("/auth/**"),      // 不帶 /api 前綴的路徑
                                 AntPathRequestMatcher.antMatcher("/api/public/**"), 
                                 AntPathRequestMatcher.antMatcher("/public/**"),    // 不帶 /api 前綴的公共路徑
-                                AntPathRequestMatcher.antMatcher("/error")
+                                AntPathRequestMatcher.antMatcher("/error"),
+                                AntPathRequestMatcher.antMatcher("/api/admin/register"),
+                                AntPathRequestMatcher.antMatcher("/admin/register")
+
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

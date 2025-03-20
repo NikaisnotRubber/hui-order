@@ -38,6 +38,7 @@ public class AuthController {
     public static class LoginRequest {
         private String email;
         private String password;
+        private String role;
     }
 
     @PostMapping("/login")
