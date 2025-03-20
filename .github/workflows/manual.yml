@@ -60,7 +60,7 @@ jobs:
       - name: Wait for backend service to start
         run: |
           for i in {1..30}; do
-            if curl -s http://localhost:9100/health | grep -q "ok"; then
+            if curl -H "Content-Type: application/json" -X POST -d '{"id"=null, "name"="曹閔丞", "email"="pa@gmail.com", "password"="Para9478", "role"=null}' URL http://localhost:9100/health | grep -q "ok"; then
               echo "Backend service is ready!"
               exit 0
             fi
