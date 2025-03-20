@@ -7,7 +7,8 @@ server:
 # PostgreSQL Database Configuration
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/database_name
+    #url: jdbc:postgresql://localhost:5432/database_name
+    url: jdbc:postgresql://host.docker.internal:13306/database_name
     username: postgres
     password: 9478
     driver-class-name: org.postgresql.Driver

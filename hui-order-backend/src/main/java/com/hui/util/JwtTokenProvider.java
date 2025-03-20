@@ -54,7 +54,8 @@ public class JwtTokenProvider {
      */
     public String createToken(Authentication authentication) {
         // 從 Authentication 中獲取用戶信息
-        String username = authentication.getName();    
+        String username = authentication.getName();
+
         // 創建自定義的數據map
         Map<String, Object> userData = new HashMap<>();
         userData.put("username", username);

@@ -1,16 +1,10 @@
 package com.hui.filter;
 
-import com.hui.service.UserService;
-import com.hui.entity.User;
 import com.hui.util.JwtTokenProvider;
-import com.alibaba.fastjson.JSON;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,22 +17,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.Collections;
 
-/**
- * JWT Authentication Filter
- */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
-
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private UserService userService;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
@@ -47,41 +32,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        // 從請求頭中獲取 JWT
+        String token = extractJwtFromRequest(request);
+
+        // 如果沒有令牌，繼續過濾鏈
+        if (!StringUtils.hasText(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
-            // 獲取請求路徑
-            String requestPath = request.getRequestURI();
-            logger.info("Processing request for path: {}", requestPath);
+            // 解析令牌
+            Claims claims = jwtTokenProvider.parseToken(token);
 
-            // 非管理員路徑，嘗試進行一般認證
-            String token = extractJwtFromRequest(request);
+            // 如果令牌有效，設置 Spring Security 的認證信息
+            if (claims != null) {
+                Integer userId = jwtTokenProvider.getUserIdFromToken(token);
 
-            if (token != null) {
-                try {
-                    Claims claims = jwtTokenProvider.parseToken(token);
+                // 創建認證信息（這裡僅使用用戶 ID 和一個基本角色）
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
 
-                    if (claims != null) {
-                        Map<String, Object> userData = JSON.parseObject(claims.getSubject(), Map.class);
-                        String username = (String) userData.get("username");
-                        String role = (String) userData.get("role");
-
-                        if (role == null) {
-                            role = "USER";
-                        }
-
-                        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                        authorities.add(new SimpleGrantedAuthority(role));
-
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                username, null, authorities
-                        );
-
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                    }
-                } catch (Exception e) {
-                    logger.error("Error processing token for non-admin path: {}", e.getMessage());
-                    // 不是管理員路徑，不需要中斷，繼續處理
-                }
+                // 將認證信息添加到當前線程的 SecurityContext
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
             // 處理過期令牌
@@ -117,7 +94,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(customToken)) {
             return customToken;
         }
-
         return null;
     }
 }

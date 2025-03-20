@@ -1,13 +1,14 @@
-FROM postgres:16
+FROM postgres:16-alpine
 
 # .env
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=9478
 ENV POSTGRES_DB=database_name
 
+WORKDIR /docker-entrypoint-initdb.d
 COPY schema.sql /docker-entrypoint-initdb.d/
 
-ENV TZ=Asia/Taipei
+ENV CN=Asia/China
 
 # 可選：設置 PostgreSQL 配置參數，可以取消下面的註釋
 # COPY postgresql.conf /etc/postgresql/postgresql.conf

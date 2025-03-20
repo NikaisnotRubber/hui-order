@@ -38,7 +38,7 @@ public class OrderController {
         Long userId = null;
         try {
             // 嘗試直接獲取 userId
-             userId = Long.valueOf(authentication.getName());
+             userId = Long.valueOf(authentication.getPrincipal().toString());
         } catch (NumberFormatException e) {
             // 如果不是數字，則假設是 email
             String email = authentication.getName();
