@@ -1,3 +1,5 @@
+permissions:
+  contents: write
 name: Manual workflow
 
 on:
@@ -28,6 +30,9 @@ jobs:
           --health-retries 5
           
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
       - name: Deploy backend application
         run: |
             tree
@@ -35,9 +40,7 @@ jobs:
             docker compose -f ${{ github.workspace }}/docker-composer.yml up
 
 
-      - name: checkout
-        uses: actions/checkout@v4
-
+     
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..30}; do
