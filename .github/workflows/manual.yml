@@ -1,0 +1,113 @@
+# This is a basic workflow that is manually triggered
+
+name: Manual workflow
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天凌晨 2 點執行 (UTC 時間)
+    - cron: '0 2 * * *'
+  workflow_dispatch: 
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  deploy-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 9478
+          POSTGRES_DB: database_name
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --mount type=bind,source=${{ github.workspace }}/schema.sql,target=/docker-entrypoint-initdb.d/schema.sql,readonly
+    steps:
+      - name: checkout
+        uses: action/checkout@v3
+         # 等待 PostgreSQL 準備就緒
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL to be ready... ($i/30)"
+            sleep 2
+          done
+          echo "Failed to connect to PostgreSQL"
+          exit 1
+      
+      # 部署後端應用 (根據您的實際情況修改)
+      - name: Deploy backend application
+        run: |
+          # 這裡放置部署後端應用的命令
+          echo "Deploying backend application..."
+          # 例如: docker-compose up -d
+          # 或者: kubectl apply -f backend-deployment.yaml
+      
+      # 等待後端服務啟動
+      - name: Wait for backend service to start
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health | grep -q "ok"; then
+              echo "Backend service is ready!"
+              exit 0
+            fi
+            echo "Waiting for backend service to be ready... ($i/30)"
+            sleep 2
+          done
+          echo "Failed to connect to backend service"
+          exit 1
+      
+      # 運行功能測試
+      - name: Run functional tests
+        run: |
+          # 使用 curl 發送 HTTP 請求測試 API
+          echo "Testing API endpoints..."
+          
+          # 測試用戶創建 API
+          CREATE_RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"username":"testuser","email":"test@example.com"}' \
+            http://localhost:8080/api/users)
+          echo "Create user response: $CREATE_RESPONSE"
+          
+          # 測試獲取用戶 API
+          GET_RESPONSE=$(curl -s http://localhost:8080/api/users/1)
+          echo "Get user response: $GET_RESPONSE"
+          
+          # 測試更新用戶 API
+          UPDATE_RESPONSE=$(curl -s -X PUT \
+            -H "Content-Type: application/json" \
+            -d '{"username":"updateduser","email":"updated@example.com"}' \
+            http://localhost:8080/api/users/1)
+          echo "Update user response: $UPDATE_RESPONSE"
+          
+          # 測試刪除用戶 API
+          DELETE_RESPONSE=$(curl -s -X DELETE http://localhost:8080/api/users/1)
+          echo "Delete user response: $DELETE_RESPONSE"
+      
+      # 發送測試結果通知
+      - name: Send notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: backend-monitoring
+          SLACK_TITLE: Backend Test Results
+          SLACK_MESSAGE: "Database deployment and API tests ${{ job.status }}"
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
