@@ -32,7 +32,7 @@ jobs:
         run: |
             
             echo "Deploying backend application..."
-            docker compose -f ./docker-composer.yml  up
+            docker compose -f ../docker-composer.yml  up
 
 
       - name: checkout
