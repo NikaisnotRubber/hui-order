@@ -22,7 +22,7 @@ jobs:
           POSTGRES_PASSWORD: 9478
           POSTGRES_DB: database_name
         ports:
-          - 13306:5432
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
