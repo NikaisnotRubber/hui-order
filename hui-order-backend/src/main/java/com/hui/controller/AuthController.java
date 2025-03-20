@@ -60,6 +60,7 @@ public class AuthController {
             
             // Get user data
             User user = userService.getUserByEmail(loginRequest.getEmail());
+            String role = userService.getUserRoleById(user.getId());
             UserDTO userDTO = userService.getUserDTOById(user.getId());
             
             // Create response
