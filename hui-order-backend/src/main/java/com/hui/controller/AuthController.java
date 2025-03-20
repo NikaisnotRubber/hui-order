@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -32,12 +33,16 @@ public class AuthController {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     
     // 添加 LoginRequest 作為內部類
     @Data
     public static class LoginRequest {
         private String email;
         private String password;
+        private String role;
     }
 
     @PostMapping("/login")
@@ -59,6 +64,7 @@ public class AuthController {
             
             // Get user data
             User user = userService.getUserByEmail(loginRequest.getEmail());
+            String role = userService.getUserRoleById(user.getId());
             UserDTO userDTO = userService.getUserDTOById(user.getId());
             
             // Create response
@@ -129,20 +135,18 @@ public class AuthController {
             log.error("Update account failed: Authentication is null");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Authentication required"));
         }
-        
-        log.info("Update account attempt for user principal: {}", authentication.getPrincipal());
-        
-        // 從身份驗證對象獲取用戶 ID
         Integer userId = (Integer) authentication.getPrincipal();
-        
-        // 根據 ID 獲取用戶
-        User user = userService.getById(userId.longValue());
-        
+        log.info("Update account attempt for user principal: {}", userId);
+
+        String email = authentication.getName();
+
+        // 從身份驗證對象獲取用戶 ID
+        User user = userService.getById(userId);
         if (user == null) {
-            log.warn("Update account failed: User not found for ID {}", userId);
+            log.warn("Update account failed: User not found for email {}", userId);
             return ResponseEntity.notFound().build();
         }
-        
+
         // 記錄更新的欄位（不記錄密碼值，只記錄是否有更新密碼）
         StringBuilder updateFields = new StringBuilder();
         
@@ -158,7 +162,7 @@ public class AuthController {
         }
         
         // 如果沒有任何要更新的字段
-        if (updateFields.length() == 0) {
+        if (updateFields.isEmpty()) {
             log.info("No fields to update for user: {}", userId);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -181,7 +185,7 @@ public class AuthController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Update account failed for user: {}, error: {}", userId, e.getMessage(), e);
+            log.error("Update account failed for user: {}, error: {}", email, e.getMessage(), e);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);

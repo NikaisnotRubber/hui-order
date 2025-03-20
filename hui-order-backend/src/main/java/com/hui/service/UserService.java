@@ -25,4 +25,6 @@ public interface UserService extends IService<User> {
      * 更新用戶信息
      */
     void updateUser(User user);
+
+    String getUserRoleById(Long id);
 }

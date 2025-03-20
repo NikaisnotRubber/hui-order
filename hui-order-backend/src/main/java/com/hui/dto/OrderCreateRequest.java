@@ -1,4 +1,3 @@
-// 建議創建新文件: src/main/java/com/hui/dto/OrderCreateRequest.java
 package com.hui.dto;
 
 import lombok.Data;

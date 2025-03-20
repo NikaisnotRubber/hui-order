@@ -3,8 +3,10 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from './stores/auth'
-import { useCartStore } from './stores/cart'
-import './styles/main.css'
+import axios from 'axios'
+
+// 設置 axios 基本 URL
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || ''
 
 async function initializeApp() {
   console.log('Initializing app...')
@@ -14,12 +16,9 @@ async function initializeApp() {
   app.use(pinia)
   app.use(router)
 
+  // 初始化認證狀態
   const authStore = useAuthStore()
-  const cartStore = useCartStore()
-
-  await authStore.initializeAuth()
-
-  cartStore.loadCart()
+  await authStore.initialize()
 
   app.mount('#app')
 }

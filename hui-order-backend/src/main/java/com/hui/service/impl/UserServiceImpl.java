@@ -37,6 +37,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .role(user.getRole())
                 .build();
     }
     
@@ -44,6 +45,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User registerUser(User user) {
         // 加密密碼
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // 確保角色設置
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("USER"); // 若未設置，預設為普通用戶
+        }
+        
         userMapper.insert(user);
         return user;
     }
@@ -55,5 +62,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         userMapper.updateById(user);
+    }
+
+    @Override
+    public String getUserRoleById(Long id) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            return null;
+        }
+        return user.getRole();
     }
 }

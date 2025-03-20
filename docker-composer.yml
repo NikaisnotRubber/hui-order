@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: hui-order-backend/
+    ports:
+      - "9100:9100"
+
+  backstage:
+    build: hui-order-backstage/
+    ports:
+      - "5174:5174"
+
+  frontend:
+    build: hui-order-web/
+    ports:
+      - "5173:5173"
+  db:
+    build: database/
+    ports:
+      - "13306:5432"
+    restart: always
+
