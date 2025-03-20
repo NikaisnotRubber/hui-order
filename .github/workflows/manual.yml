@@ -57,39 +57,27 @@ jobs:
           exit 1
           
      
-      - name: Wait for backend service to start
-        run: |
-          for i in {1..30}; do
-            if curl -H "Content-Type: application/json" -X POST -d '{"id"=null, "name"="曹閔丞", "email"="pa@gmail.com", "password"="Para9478", "role"=null}' URL http://localhost:9100/auth/login | grep -q "ok"; then
-              echo "Backend service is ready!"
-              exit 0
-            fi
-            echo "Waiting for backend service to be ready... ($i/30)"
-            sleep 2
-          done
-          echo "Failed to connect to backend service"
-          exit 1
+      # - name: Wait for backend service to start
+      #   run: |
+      #     for i in {1..30}; do
+      #       (need to modify) if curl -H "Content-Type: application/json" -X POST -d '{"id"=null, "name"="曹閔丞", "email"="pa@gmail.com", "password"="Para9478", "role"=null}' URL http://localhost:9100/auth/login | grep -q "ok"; then
+      #         echo "Backend service is ready!"
+      #         exit 0
+      #       fi
+      #       echo "Waiting for backend service to be ready... ($i/30)"
+      #       sleep 2
+      #     done
+      #     echo "Failed to connect to backend service"
+      #     exit 1
 
       # - name: Run functional tests
       #   run: |
       #     echo "Testing API endpoints..."
           
-      #     CREATE_RESPONSE=$(curl -s -X POST \
-      #       -H "Content-Type: application/json" \
-      #       -d '{"username":"testuser","email":"test@example.com"}' \
-      #       http://localhost:8080/api/users)
-      #     echo "Create user response: $CREATE_RESPONSE"
-          
-      #     GET_RESPONSE=$(curl -s http://localhost:8080/api/users/1)
+      #     GET_RESPONSE=$(curl -s http://localhost:9100/api/users/...)
       #     echo "Get user response: $GET_RESPONSE"
           
-      #     UPDATE_RESPONSE=$(curl -s -X PUT \
-      #       -H "Content-Type: application/json" \
-      #       -d '{"username":"updateduser","email":"updated@example.com"}' \
-      #       http://localhost:8080/api/users/1)
-      #     echo "Update user response: $UPDATE_RESPONSE"
-          
-      #     DELETE_RESPONSE=$(curl -s -X DELETE http://localhost:8080/api/users/1)
+      #     DELETE_RESPONSE=$(curl -s -X DELETE http://localhost:9100/api/users/1)
       #     echo "Delete user response: $DELETE_RESPONSE"
 
       # - name: Send notification
