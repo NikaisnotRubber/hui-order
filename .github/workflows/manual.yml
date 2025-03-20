@@ -30,9 +30,9 @@ jobs:
     steps:
       - name: Deploy backend application
         run: |
-            pwd
+            
             echo "Deploying backend application..."
-            docker-compose -f ./docker-composer.yml  up
+            docker compose -f ./docker-composer.yml  up
 
 
       - name: checkout
